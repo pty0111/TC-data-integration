@@ -47,3 +47,46 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# VSCode
+.vscode/
+
+# Mac/OSX
+.DS_Store
+__MACOSX/
+
+# jupyter
+.ipynb_checkpoints
+
+# r objects
+.Rhistory
+*.rds
+!palette.rds
+
+# large csv files
+*dense.csv
+*expr.csv
+
+# h5ad files
+*.h5ad
+
+# matrix
+*.mtx
+
+#
+*.bw
+
+# gtf
+*.gtf
+
+# tar gz
+*.gz
+*.tar
+*.tbi
+# ArchR
+*.arrow
+*.h5
+ImputeWeights/
+ArchROutput/
+ArchRLogs/
+

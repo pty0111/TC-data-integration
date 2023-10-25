@@ -1,3 +1,8 @@
+gitignore_base.txt
+make-gitignore.sh
+
+.ipynb_checkpoints/
+
 # History files
 .Rhistory
 .Rapp.history
@@ -44,14 +49,22 @@ docs/
 
 # translation temp files
 po/*~
-
+ATAC-seq/idr/all/idr/
 # RStudio Connect folder
 rsconnect/
+
+.DS_Store
+
+.tmp.motifs
+
+*.featureCounts
+*.tmp
 
 # VSCode
 .vscode/
 
 # Mac/OSX
+*.DS_Store
 .DS_Store
 __MACOSX/
 
@@ -62,7 +75,7 @@ __MACOSX/
 .Rhistory
 *.rds
 !palette.rds
-
+.Rapp.history
 # large csv files
 *dense.csv
 *expr.csv
@@ -86,7 +99,8 @@ __MACOSX/
 # ArchR
 *.arrow
 *.h5
-ImputeWeights/
-ArchROutput/
-ArchRLogs/
 
+# large folders
+*_HTO/
+
+# large files (>100MB)

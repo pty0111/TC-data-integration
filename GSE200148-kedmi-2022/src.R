@@ -1,4 +1,4 @@
-setwd("~/CCR7_DC/GSE200148-kedmi-2022/")
+setwd("~/0-workspace/TC-matters-arising/GSE200148-kedmi-2022/")
 
 library(Seurat)
 library(Rphenograph)
@@ -14,36 +14,6 @@ library(RColorBrewer)
 
 set.seed(1)
 options(future.globals.maxSize = Inf)
-# pal <- list(
-#   Cluster.annot = c(
-#     'JC' = "#e60e0e", 'ILC3' = "#077315", 'B cell' = "#f081e6", 'T cell' = "#ff7f00", 'cDC1' = "#7c2da6",
-#     'Other' = 'gray'),
-#   R.clusters = c('R1' = '#077315', 'R2' = '#d1c50f', 'R3' = '#2e2bed',
-#                  'R4' = '#e60e0e', 'R5' = 'pink'
-#   )
-# )
-# pal$Clusters <- pal$Cluster.annot[c('JC', 'Other', 'Other', 'Other', 'Other', 'Other', 'Other', 'Other', 'Other', 'JC', 'Other', 'JC', 'T cell', 'Other',
-#                                     'cDC1', 'JC', 'B cell', 'ILC3', 'Other')]
-# cl.col <- c(
-#   "#1ee3c5", "#de9309", "#5fed0e", "#489de8", "#2e2bed",
-#   "#bd537a", "#2f026e", "#1f758c", "#9c6fa8", "#6b6580",
-#   "#9e7d3f", "#49709c", "#ccf3ff", "#5c1a1a", "#d1d18a",
-#   "#c9a6a1", "#827c68", "#b54800", "#79a695"
-# )
-# cc <- 1
-# for (i in 1:length(pal$Clusters)){
-#   if (pal$Clusters[i] == 'gray'){
-#     pal$Clusters[i] <- cl.col[cc]
-#     cc <- cc+1
-#   }
-# }
-# names(pal$Clusters) <- 1:length(pal$Clusters)
-# pal$Clusters[1] <- pal$R.clusters['R3']
-# pal$Clusters[10] <- pal$R.clusters['R5']
-# pal$Clusters[12] <- pal$R.clusters['R4']
-# pal$Clusters[16] <- pal$R.clusters['R2']
-# pal$Clusters[18] <- pal$R.clusters['R1']
-# saveRDS(pal, file = "plots/palette.rds")
 pal <- readRDS("plots/palette.rds")
 
 plot.QC.violin <- function(sro, ident, feature, yintercept, br, Log10 = F, pal = NULL){
@@ -210,20 +180,17 @@ sro$Cluster.annot <- annot[sro$Clusters, "X2"]
 sro$Cluster.annot <- factor(sro$Cluster.annot, levels = c("JC", "ILC3", "B cell", "T cell", "cDC1", "Other"))
 
 # save files ####
+saveRDS(sro, file = "results/SRO.rds")
 write.csv(sro@meta.data, file = "results/meta-data.csv")
 write.csv(sro@reductions$pca@cell.embeddings, file = "results/PCA.csv")
 write.csv(sro@reductions$umap@cell.embeddings, file = "results/UMAP.csv")
-# writeMM(sro@assays$RNA@data, file = "results/unimputed-expr.mtx")
 write.csv(sro@assays$RNA@data, file = "results/unimputed-expr.csv")
-saveRDS(sro, file = "results/SRO.rds")
 
 sro.imp <- magic(sro)
-# saveRDS(sro.imp, file = "results/sro.imp.rds")
-saveRDS(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.rds")
 write.csv(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.csv")
 
-# sro.imp <- ScaleData(sro.imp, features = rownames(sro.imp), assay = "MAGIC_RNA")
-# saveRDS(sro.imp@assays$MAGIC_RNA@scale.data, file = "results/scale-data.rds")
+imp.expr <- readRDS("results/imputed-expr.rds")
+write.csv(imp.expr, file = "results/imputed-expr.csv")
 
 # ############################################################################ #
 # Plot clusters ####
@@ -308,120 +275,44 @@ ggsave(
   )
 )
 
+
 # ############################################################################ #
-# MAST DEG ####
-# ############################################################################ #
+# add module scores ####
 sro <- readRDS("results/SRO.rds")
-imp.expr <- readRDS("results/imputed-expr.rds")
-sro@assays$RNA@meta.features$gene_name <- rownames(sro@assays$RNA@meta.features)
-fn <- "C10-vs-rest"
-# MAST.DE(fn, sro, group.by = "Clusters", ident.1 = 10, ident.2 = c(1:9, 11:19))
-pdf(width = 20, height = 50, file = paste0("plots/markers/", fn, ".pdf"))
-DE.heatmap(
-  sro, expr = imp.expr, fn = fn, pairwise = T,
-  cells = rownames(subset(sro@meta.data, Clusters %in% c(10, c(1:9, 11:19)))),
-  fc.thr = 2.5
-)
-dev.off()
-####
-fn <- "R5-vs-R1,2,3,4"
-MAST.DE(fn, sro, group.by = "R.clusters", ident.1 = 'R5', ident.2 = c('R1','R2','R3','R4'))
-pdf(width = 20, height = 50, file = paste0("plots/markers/", fn, ".pdf"))
-DE.heatmap(
-  sro, expr = imp.expr, fn = fn, pairwise = T,
-  cells = rownames(subset(sro@meta.data, R.clusters %in% c('R1','R2','R3','R4','R5'))),
-  fc.thr = 2.5, split = 'R.clusters'
-)
-dev.off()
+## TC I ~ IV ####
+TC_signatures <- read.csv('../MLN_RORgt_MHCII_multiome/Seurat/results/markers/C2-5_top130.csv')
+TC_I <- toupper(TC_signatures[TC_signatures$celltype == 'TC I',]$gene_name)
+TC_II <- toupper(TC_signatures[TC_signatures$celltype == 'TC II',]$gene_name)
+TC_III <- toupper(TC_signatures[TC_signatures$celltype == 'TC III',]$gene_name)
+TC_IV <- toupper(TC_signatures[TC_signatures$celltype == 'TC IV',]$gene_name)
 
-pdf(width = 20, height = 30, file = paste0("plots/markers/", fn, "-top50.pdf"))
-DE.heatmap(
-  sro, expr = imp.expr, fn = fn, pairwise = T,
-  cells = rownames(subset(sro@meta.data, R.clusters %in% c('R1','R2','R3','R4','R5'))),
-  fc.thr = 2.5, split = 'R.clusters', n=50
-)
-dev.off()
-
-MAST.DE <- function(fn, sro, ...){
-  m <- suppressWarnings(FindMarkers(object = sro, test.use = "MAST", logfc.threshold = 0, ...))
-  m$gene_name <- sro@assays$RNA@meta.features[rownames(m), "gene_name"]
-  write.csv(m, file = paste0("results/markers/", fn, ".csv"), row.names = T, quote = F)
-}
-
-select.markers <- function(fn, pairwise = F, fc.thr = 1.5, apv.thr = 0.01, n = Inf){
-  markers <- read.csv(file = paste0("results/markers/", fn, ".csv"), header = T, stringsAsFactors = F) %>%
-    subset(!grepl("(^MT-)|(^RPS)|(^RPL)|(^MRPL)|(^MRPS)", toupper(gene_name)))
-  if(pairwise){
-    markers <- subset(markers, abs(avg_log2FC) > log2(fc.thr) & p_val_adj < apv.thr)
-    markers$cluster <- ifelse(markers$avg_log2FC > 0, "up", "down")
-    if(!is.infinite(n)) markers <- markers %>% group_by(cluster) %>% top_n(n, abs(avg_log2FC))
-    markers <- markers[order(markers$avg_log2FC), ]
-  } else{
-    markers <- subset(markers, avg_log2FC > log2(fc.thr) & p_val_adj < apv.thr)
-    if(any(duplicated(markers$gene_name))) markers <- markers %>% group_by(gene_name) %>% top_n(1, avg_log2FC)
-    if(!is.infinite(n)) markers <- markers %>% group_by(cluster) %>% top_n(n, abs(avg_log2FC))
-    markers <- markers[order(markers$cluster, markers$avg_log2FC), ]
-  }
-  return(markers)
-}
-
-DE.heatmap <- function(
-    sro = NULL, expr = sro@assays$RNA@data, md = sro@meta.data,
-    cells = rownames(md), split = "Clusters",
-    cluster_columns = T, cluster_column_slices = T, ...
-){
-  markers <- select.markers(...)
-  ca <- columnAnnotation(
-    df = sro@meta.data[cells, c("R.clusters", "Cluster.annot")],
-    col = list(R.clusters = pal$R.clusters, Cluster.annot = pal$Cluster.annot)
-  )
-  col.ramp <- colorRamp2(c(-10, -5, seq(-3, 3, 1), 5, 10),
-                         c("#173c68", "#173c68", "#1c5785", "#166db0", "#a6d1e3", "#ffffff",
-                           "#f09173", "#d46052", "#b32339", "#690822", "#690822"))
-  Heatmap(
-    matrix = t(scale(t(expr[markers$gene_name, cells]))), name = "scaled\nimputed\nexpression", col = col.ramp,
-    show_column_names = F, column_split = md[cells, split], top_annotation = ca,
-    cluster_rows = F, row_names_side = "right",
-    cluster_columns = cluster_columns, cluster_column_slices = cluster_column_slices,
-    row_names_gp = gpar(fontface = "italic", fontsize = 7), use_raster = T
-  )
-}
-
-# ############################################################################ #
-# Violin plot ####
-# ############################################################################ #
-sro <- readRDS("results/SRO.rds")
-expr <- sro@assays$RNA@data
-expr <- t(expr)
-md <- sro@meta.data
-md <- md[!(is.na(md$R.clusters)),]
-df <- cbind(md, expr[rownames(md), ])
-
-plot.violin <- function(
-    vis, mapping,
-    groups, title, legend.title, jitter = F, pal = NULL, y.axis.title = 'Expression level',
-    et = element_text(size = 15)
-){
-  eb <- element_blank()
-  gp <- ggplot(mapping = mapping) + theme_classic() +
-    geom_violin(aes(fill = .data[[groups]]), vis, show.legend = F) + 
-    labs(title=title, y = y.axis.title, x = "") +
-    theme(axis.text = et,
-          axis.title = et, title = et,
-          legend.title = et, legend.text = et) + guides(fill=guide_legend(title=legend.title))
-  if (jitter){
-    gp <- gp + geom_jitter(aes(fill = .data[[groups]]), vis, shape=16, position=position_jitter(0.2))
-  }
-  if (!(is.null(pal))){
-    gp <- gp + scale_fill_manual(values = pal)
-  }
-  return(gp)
-}
-
-ggsave(
-  filename = "plots/violin-Rclusters-Malat1.pdf", width = 10, height = 10,
-  plot = plot.violin(df, mapping=aes(x=R.clusters, y=MALAT1), groups='R.clusters', pal=pal$R.clusters,
-                     title='MALAT1', legend.title = 'Cluster')
+TC.modules <- list(TC_I, TC_II, 
+                   TC_III, TC_IV)
+sro <- AddModuleScore(
+  object = sro,
+  features = TC.modules,
+  name = 'TC'
 )
 
+## ILC3, JC1, JC2, JC3 ####
+JC1 <- toupper(c('Slc7a10', 'Dcaf12l2', 'Olig1', 'Gal', 'Atp1b1', 'Dsg1b', 'Ttyh1', 'Tbx5', 'Cnr1', 'Ank', 'Fam81a', 'B3galt1', 'Ube2e2', 'Syt1', 'Zfand6'))
+JC2 <- toupper(c('Egfl6', 'Tnni1', '1110008L16Rik', 'Cep112', 'Asic1', 'Ly9', 'Fabp1', 'Col17a1', 'Pgam2', 
+                'Poc1a', 'Clic3', 'Prdm16', 'Ppp2r2c', 'Gstt2'))
+JC3 <- toupper(c('Gm26917', 'Ptbp2', 'Zc3h7a', 'Lcor', 'Nfat5', 'Smg1', 'Cep350', 'Mdm4', 'Chuk', 
+                'Mapk8ip3', 'Prpf39', 'Eml5', 'Phip', 'Rnf111', 'Trpm7'))
+ILC3 <- toupper(c('Cxcr6', 'Clnk', 'Fam184b', 'Klrb1b', 'Klrb1f', 'Chad', 'Apol7e', 'Ncr1', 
+                'Il22', 'Arg1', 'Il2rb', 'Dgat1', 'Il18rap', 'Gzmb', 'Ccdc184'))
+JC.modules <- list(JC1, JC2, 
+                   JC3)
+sro <- AddModuleScore(
+  object = sro,
+  features = JC.modules,
+  name = 'JC'
+)
+
+sro <- AddModuleScore(
+  object = sro,
+  features = list(ILC3),
+  name = 'ILC3'
+)
 

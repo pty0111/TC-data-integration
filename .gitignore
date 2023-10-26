@@ -73,8 +73,6 @@ __MACOSX/
 
 # r objects
 .Rhistory
-*.rds
-!palette.rds
 .Rapp.history
 # large csv files
 *dense.csv
@@ -104,3 +102,16 @@ __MACOSX/
 *_HTO/
 
 # large files (>100MB)
+
+GSE184175-lyu-2022/results/SRO.rds
+GSE184175-lyu-2022/results/imputed-expr.csv
+GSE184175-lyu-2022/results/unimputed-expr.csv
+GSE176282-wang-2021/results/SRO.rds
+GSE176282-wang-2021/results/imputed-expr.csv
+GSE176282-wang-2021/results/unimputed-expr.csv
+MLN_RORgt_MHCII_multiome/Seurat/results/SRO.rds
+MLN_RORgt_MHCII_multiome/Seurat/results/integrated-with-Kedmi-Wang-Lyu/SRO.rds
+GSE200148-kedmi-2022/results/SRO.rds
+GSE200148-kedmi-2022/results/imputed-expr.rds
+GSE200148-kedmi-2022/results/imputed-expr.csv
+GSE200148-kedmi-2022/results/unimputed-expr.csv

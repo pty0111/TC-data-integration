@@ -1,4 +1,4 @@
-setwd("~/CCR7_DC/GSE184175-lyu-2022/")
+setwd("~/0-workspace/TC-matters-arising/GSE184175-lyu-2022/")
 
 library(Seurat)
 library(Rphenograph)
@@ -14,52 +14,6 @@ library(RColorBrewer)
 
 set.seed(1)
 options(future.globals.maxSize = Inf)
-# pal ####
-# pal <- list(
-#   Clusters = c(
-#     "#e60e0e", "#077315", "#1ee3c5", "#f081e6", "#7c2da6",
-#     "#de9309", "#d1c50f", "#489de8", "#2e2bed", "#5fed0e",
-#     "#bd537a", "#2f026e", "#1f758c", "#9c6fa8", "#6b6580",
-#     "#9e7d3f", "#49709c", "#ccf3ff", "#5c1a1a", "#d1d18a",
-#     "#c9a6a1", "#827c68", "#b54800", "#79a695"
-#   ),
-#   R.clusters = c('R1' = '#077315', 'R2' = '#2e2bed', 'R3' = '#e60e0e',
-#                  'R4' = '#d1c50f', 'R5' = 'pink'
-#   ),
-#   Cluster.annot.from.paper = c(
-#     'eTACs I' = "#2e2bed", 'eTACs II' ="#e60e0e",
-#     'Treg I' = '#b2df8a', 'Treg II' = '#1f758c', 'Treg III' = '#5fed0e', 
-#     'Th17' = '#1ee3c5', 'ILC2s' = '#6a3d9a',
-#     'LTi-like ILC3s' = '#077315', 'T-bet+ ILC3s I' = '#ccf3ff', 'T-bet+ ILC3s II' = '#489de8', 
-#     'gamma-delta T cells I' = '#ff7f00', 'gamma-delta T cells II' = '#fdbf6f', 
-#     'B cells'="#f081e6",
-#     'Doublets' = 'gray'
-#   ),
-#   annotations = c(
-#     "#e60e0e", "#077315", "#1ee3c5", "#f081e6", "#7c2da6",
-#     "#de9309", "#d1c50f", "#489de8", "#2e2bed", "#5fed0e",
-#     "#bd537a", "#2f026e", "#1f758c", "#9c6fa8", "#6b6580",
-#     "#9e7d3f", "#49709c", "#ccf3ff", "#5c1a1a", "#d1d18a",
-#     "#c9a6a1", "#827c68", "#b54800", "#79a695"
-#   )
-#   # Cluster.annot.from.paper = c(
-#   #   'eTAC I' = "#e60e0e", 'eTAC II' ="#c994c7", 
-#   #   'LTi cell' ="#d1c50f", 'pTreg' ="#ccf3ff", 'gd T cell' ="#2e2bed",
-#   #   'Th17'="#489de8", 'NCR1+ ILC3'="#077315", 'ILC2'="#5fed0e", 'Proliferating'="#de9309", 
-#   #   'B cell'="#1ee3c5", 'Other'='darkgray'
-#   # )
-#   # Cluster.annot = c(
-#   #   'TC I' = "#e60e0e", 'TC II/III/IV' ="#f081e6", 'Transitional ILC3-TC' ="#7c2da6", 
-#   #   'LTi cell' ="#d1c50f", 'pTreg' ="#ccf3ff", 'gd T cell' ="#2e2bed",
-#   #   'Th17'="#489de8", 'NCR1+ ILC3'="#077315", 'ILC2'="#5fed0e", 'Proliferating'="#de9309", 
-#   #   'B cell'="#1ee3c5",
-#   #   'doublet'='lightgray', 'Other'='darkgray'
-#   # ),
-# )
-# pal$Clusters <- pal$Cluster.annot.from.paper[c('Treg I', 'Th17', 'LTi-like ILC3s', 'T-bet+ ILC3s I', 'gamma-delta T cells I', 'Treg II',
-#                                'eTACs I', 'B cells', 'Doublets', 'gamma-delta T cells II', 'ILC2s', 'eTACs II', 'T-bet+ ILC3s II', "Treg III")]
-# names(pal$Clusters) <- 0:(length(pal$Clusters)-1)
-# saveRDS(pal, file = "plots/palette.rds")
 pal <- readRDS("plots/palette.rds")
 
 plot.QC.violin <- function(sro, ident, feature, yintercept, br, Log10 = F, pal = NULL){
@@ -171,7 +125,7 @@ add.custom.umap <- function(sro, umap, slot.name, key,
 gene.mtx <- Read10X_h5('GSM5579608_filtered_feature_bc_matrix.h5')
 rownames(gene.mtx) <- toupper(rownames(gene.mtx))
 head(gene.mtx)
-md <- read.csv("GSM5579608_cell_metadata.tsv.gz", sep='\t') # original md fromt the paper
+md <- read.csv("GSM5579608_cell_metadata.tsv.gz", sep='\t') # original md from the paper
 rownames(md) <- md$barcode
 colnames(md)[4] <- 'percent.MT'
 gene.mtx <- gene.mtx[, md$barcode]
@@ -182,7 +136,7 @@ sro <- CreateSeuratObject(counts = gene.mtx, project = "lyu", meta.data = md)
 sro$Sample <- sro$orig.ident
 Idents(sro) <- sro$Sample
 # sro <- PercentageFeatureSet(sro, pattern = "^MT-", col.name = "percent.MT")
-thr <- data.frame(nf.max = 5000, nf.min = 600, mp.max = 10)
+thr <- data.frame(nf.max = 5000, nf.min = 600, mp.max = 10) # same thr as paper
 cell.discard <- sro$nFeature_RNA > thr$nf.max |
   sro$nFeature_RNA < thr$nf.min |
   sro$percent.MT > thr$mp.max
@@ -203,7 +157,7 @@ pdf("plots/QC/cluster-QC.pdf", width = 10, height = 10)
 plot.all.QC(sro, ident = "seurat_clusters")
 dev.off()
 
-# add paper's umap
+# add reported umap
 umap.df <- data.frame(UMAP_1 = md[rownames(sro@meta.data),]$UMAP_1,
                       UMAP_2 = md[rownames(sro@meta.data),]$UMAP_2,
                       row.names = rownames(sro@meta.data))
@@ -211,15 +165,9 @@ sro <- add.custom.umap(sro,
                        umap.df, 
                        'umap', 'umap')
 
-# s.genes <- intersect(toupper(cc.genes.updated.2019$s.genes), rownames(sro))
-# g2m.genes <- intersect(toupper(cc.genes.updated.2019$g2m.genes), rownames(sro))
-# sro <- CellCycleScoring(sro, s.features = s.genes, g2m.features = g2m.genes, set.ident = T)
-# sro$Phase <- gsub("G2M", "G2/M", sro$Phase)
-
 # ############################################################################ #
 # annotations from paper ####
 # ############################################################################ #
-length(intersect(names(pal$Cluster.annot.from.paper), cl.to.paper.annotation)) == length(pal$Cluster.annot.from.paper)
 cl.to.paper.annotation <- c('0' = 'Treg I',
                             '1' = 'Th17', 
                             '2' = 'LTi-like ILC3s', 
@@ -240,21 +188,12 @@ sro$annotations <- factor(sro$annotations, levels = names(pal$Cluster.annot.from
 
 # save #####
 saveRDS(sro, file = "results/SRO.rds")
-
 write.csv(sro@meta.data, file = "results/meta-data.csv")
-# write.csv(sro@reductions$pca@cell.embeddings, file = "results/PCA.csv")
 write.csv(sro@reductions$umap@cell.embeddings, file = "results/UMAP.csv")
-saveRDS(as.matrix(sro@assays$RNA@data), file = "results/unimputed-expr.rds")
-# writeMM(sro@assays$RNA@data, file = "results/unimputed-expr.mtx")
-# write.csv(sro@assays$RNA@data, file = "results/unimputed-expr.csv")
+write.csv(sro@assays$RNA@data, file = "results/unimputed-expr.csv")
 
 sro.imp <- magic(sro)
-# saveRDS(sro.imp, file = "results/sro.imp.rds")
-saveRDS(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.rds")
-# write.csv(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.csv")
-
-# sro.imp <- ScaleData(sro.imp, features = rownames(sro.imp), assay = "MAGIC_RNA")
-# saveRDS(sro.imp@assays$MAGIC_RNA@scale.data, file = "results/scale-data.rds")
+write.csv(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.csv")
 
 # ############################################################################ #
 # Plot clusters ####
@@ -347,32 +286,4 @@ ggsave(
   )
 )
 
-# ############################################################################ #
-# Dot plot ####
-# ############################################################################ #
-sro <- readRDS("results/SRO.rds")
-sro.subset <- subset(sro, subset = Clusters %in% c(2, 6, 11))
-
-genes <- c("CXCR6", "RORA", "AIRE", "GAL", 'COL17A1', 'H2-K1', 
-           'DNASE1L3', 'NLRC5', 
-           'ITGB8', 'CCL22')
-Idents(sro) <- sro$annotations
-Idents(sro.subset) <- sro.subset$annotations
-
-ggsave(
-  filename = "plots/dot-all-cells.pdf", width = 15, height = 12,
-  plot = DotPlot(sro, assay = "RNA", group.by = "annotations",
-                 features = genes, cols = c("blue", "red"), dot.scale = 7) +
-    scale_x_discrete(breaks = genes, labels = genes) +
-    theme(axis.text.x.bottom = element_text(angle = 90, vjust = 0, size = 11)) + labs(x = "", y = "Annotation")
-)
-
-
-ggsave(
-  filename = "plots/dot-RORgt+cells.pdf", width = 15, height = 12,
-  plot = DotPlot(sro.subset, assay = "RNA", group.by = "annotations",
-                 features = genes, cols = c("blue", "red"), dot.scale = 7) +
-    scale_x_discrete(breaks = genes, labels = genes) +
-    theme(axis.text.x.bottom = element_text(angle = 90, vjust = 0, size = 11)) + labs(x = "", y = "Annotation")
-)
 

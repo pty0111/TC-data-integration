@@ -1,4 +1,4 @@
-setwd("~/CCR7_DC/GSE176282-wang-2021/")
+setwd("~/0-workspace/TC-matters-arising/GSE176282-wang-2021/")
 
 library(Seurat)
 library(Rphenograph)
@@ -15,32 +15,6 @@ library(RColorBrewer)
 set.seed(1)
 options(future.globals.maxSize = Inf)
 
-pal <- list(
-  R.clusters = c('R1' = '#077315', 'R2' = '#d1c50f', 'R3' = '#2e2bed',
-                 'R4' = '#e60e0e', 'R5' = 'pink'
-  ),
-  Cluster.annot = c(
-    'TC I' = "#2e2bed", 'TC II, III, IV' = "#e60e0e", 'Ki67 TC' = "#d1c50f", 'LTi' = "#077315", 'B cell' = "#f081e6",
-    'Other' = 'darkgray', 'low QC' = 'lightgray')
-)
-pal$Clusters <- pal$Cluster.annot[c('TC I', 'Other', 'Other', 'TC II, III, IV', 'Other', 'Other', 'Other', 'Other', 'Other', 'B cell', 'Ki67 TC',
-                                    'Other', 'Other', 'low QC', 'Other', 'Other', 'Other', 'Other', 'Other', 'LTi', 'Other')]
-cl.col = c(
-  "#1ee3c5", "#7c2da6",
-  "#de9309", "#489de8", "#5fed0e",
-  "#bd537a", "#2f026e", "#1f758c", "#9c6fa8", "#6b6580",
-  "#9e7d3f", "#49709c", "#ccf3ff", "#5c1a1a", "#d1d18a",
-  "#c9a6a1", "#827c68", "#b54800", "#79a695"
-)
-cc <- 1
-for (i in 1:length(pal$Clusters)){
-  if (pal$Clusters[i] == 'darkgray'){
-    pal$Clusters[i] <- cl.col[cc]
-    cc <- cc+1
-  }
-}
-names(pal$Clusters) <- 1:length(pal$Clusters)
-saveRDS(pal, file = "plots/palette.rds")
 pal <- readRDS("plots/palette.rds")
 
 plot.QC.violin <- function(sro, ident, feature, yintercept, br, Log10 = F, pal = NULL){
@@ -140,7 +114,7 @@ break.down.bar.plot <- function(md, group1, group2, ...){
     labs(x = group1, y = "number of cells", fill = group2) + theme_bw() +
     theme(panel.grid.major = element_blank())
 }
-##############################################################################
+
 # create sro ####
 gene.mtx <- Read10X_h5('GSM5362108_RNA_GFP_filtered_feature_bc_matrix.h5')
 rownames(gene.mtx) <- toupper(rownames(gene.mtx))
@@ -197,17 +171,11 @@ sro$Cluster.annot <- factor(sro$Cluster.annot, levels = c("TC I", "TC II, III, I
 write.csv(sro@meta.data, file = "results/meta-data.csv")
 write.csv(sro@reductions$pca@cell.embeddings, file = "results/PCA.csv")
 write.csv(sro@reductions$umap@cell.embeddings, file = "results/UMAP.csv")
-# writeMM(sro@assays$RNA@data, file = "results/unimputed-expr.mtx")
 write.csv(sro@assays$RNA@data, file = "results/unimputed-expr.csv")
 saveRDS(sro, file = "results/SRO.rds")
 
 sro.imp <- magic(sro)
-# saveRDS(sro.imp, file = "results/sro.imp.rds")
-# saveRDS(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.rds")
 write.csv(sro.imp@assays$MAGIC_RNA@data, file = "results/imputed-expr.csv")
-
-sro.imp <- ScaleData(sro.imp, features = rownames(sro.imp), assay = "MAGIC_RNA")
-saveRDS(sro.imp@assays$MAGIC_RNA@scale.data, file = "results/scale-data.rds")
 
 # ############################################################################ #
 # Plot clusters ####
@@ -286,3 +254,43 @@ ggsave(
     clusters = sro.subset$Cluster.annot, cl.name = "Annotation", col = pal$Cluster.annot[annot.to.include]
   )
 )
+# ############################################################################ #
+# add module scores ####
+sro <- readRDS("results/SRO.rds")
+## TC I ~ IV ####
+TC_signatures <- read.csv('../MLN_RORgt_MHCII_multiome/Seurat/results/markers/C2-5_top130.csv')
+TC_I <- toupper(TC_signatures[TC_signatures$celltype == 'TC I',]$gene_name)
+TC_II <- toupper(TC_signatures[TC_signatures$celltype == 'TC II',]$gene_name)
+TC_III <- toupper(TC_signatures[TC_signatures$celltype == 'TC III',]$gene_name)
+TC_IV <- toupper(TC_signatures[TC_signatures$celltype == 'TC IV',]$gene_name)
+
+TC.modules <- list(TC_I, TC_II, 
+                   TC_III, TC_IV)
+sro <- AddModuleScore(
+  object = sro,
+  features = TC.modules,
+  name = 'TC'
+)
+
+## ILC3, JC1, JC2, JC3 ####
+JC1 <- toupper(c('Slc7a10', 'Dcaf12l2', 'Olig1', 'Gal', 'Atp1b1', 'Dsg1b', 'Ttyh1', 'Tbx5', 'Cnr1', 'Ank', 'Fam81a', 'B3galt1', 'Ube2e2', 'Syt1', 'Zfand6'))
+JC2 <- toupper(c('Egfl6', 'Tnni1', '1110008L16Rik', 'Cep112', 'Asic1', 'Ly9', 'Fabp1', 'Col17a1', 'Pgam2', 
+                 'Poc1a', 'Clic3', 'Prdm16', 'Ppp2r2c', 'Gstt2'))
+JC3 <- toupper(c('Gm26917', 'Ptbp2', 'Zc3h7a', 'Lcor', 'Nfat5', 'Smg1', 'Cep350', 'Mdm4', 'Chuk', 
+                 'Mapk8ip3', 'Prpf39', 'Eml5', 'Phip', 'Rnf111', 'Trpm7'))
+ILC3 <- toupper(c('Cxcr6', 'Clnk', 'Fam184b', 'Klrb1b', 'Klrb1f', 'Chad', 'Apol7e', 'Ncr1', 
+                  'Il22', 'Arg1', 'Il2rb', 'Dgat1', 'Il18rap', 'Gzmb', 'Ccdc184'))
+JC.modules <- list(JC1, JC2, 
+                   JC3)
+sro <- AddModuleScore(
+  object = sro,
+  features = JC.modules,
+  name = 'JC'
+)
+
+sro <- AddModuleScore(
+  object = sro,
+  features = list(ILC3),
+  name = 'ILC3'
+)
+
